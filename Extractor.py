@@ -4,6 +4,9 @@ from astroquery.sdss import SDSS
 from astropy import coordinates as coords
 import pandas as pd 
 from astroquery.ned import Ned 
+import matplotlib.pyplot as plt
+from astropy.convolution import convolve, Box1DKernel
+
 
 # this function extracts the information from the database 
 def extractor(position): # the format of the positon must be as follows: '0h8m05.63s +14d50m23.3s'
@@ -95,7 +98,8 @@ def transform_data(spec_list, z): # takes as input a list of (I think?) fits fil
         # SOFIA- try a nested dictionary?!?! 
         for j in range(data.shape[0]):
 
-            dict[j]['flux']=data[j][0] # the fluxes
+            smoothedFlux=convolve(data[j][0],Box1DKernel(9)) # smooth the fluxes using a boxcar
+            dict[j]['flux']=smoothedFlux # the fluxes
 
             wavelengths_uncorrected=10**data[j][1] # the wavelengths (transformed from the log scale)
             wavelengths_corrected=redshift_correct(z, wavelengths_uncorrected) # save the wavelengths after they have been scaled to the rest-frame
@@ -108,4 +112,21 @@ def transform_data(spec_list, z): # takes as input a list of (I think?) fits fil
 
     # now return the nested dictionary, each key should have three arrays (flux, wavelength, and sigma)
     return dict
+
+    # now define a function which will plot the actual spectra given a spec dictionary
+    def plot_spec(dict, radec, z): # takes as input the dictionary holding the data, the radec, and the redshift
+        # instantiate a figure object
+        fig=plt.figure()
+        plt.title(str(radec)+str('; ')+str("z"))
+        plt.xlabel("Rest-frame Wavelength [$\AA$]")
+        plt.ylabel("Flux [$10^{-17}$ erg$^{-1}$s$^{-1}$cm$^{-2}$$\AA^{-1}$]")
+        for epoch in range(len(dict)):
+            plt.plot(dict[epoch]['wavelength'], dict[epoch]['flux']) # plot the actual data
+            # now create upper and lower bounds on the uncertainty regions
+            sigmaUpper=np.add(dict[epoch]['flux'],dict[epoch]['1sigma'])
+            sigmaLower=np.subtract(dict[epoch]['flux'],dict[epoch]['1sigma'])
+            plt.fill_between(dict[epoch]['wavelength'],sigmaLower, sigmaUpper, color='grey', alpha='0.5')
+
+        plt.show()
+        
 
