@@ -8,60 +8,48 @@ import matplotlib.pyplot as plt
 from astropy.convolution import convolve, Box1DKernel
 
 
-# this function extracts the information from the database 
-def extractor(position): # the format of the positon must be as follows: '0h8m05.63s +14d50m23.3s'
-	pos=coords.SkyCoord(position, frame='icrs') # create a position object
-	xid = SDSS.query_region(pos, spectro=True) # query the database
-	xid.to_pandas() # convert to a pandas data frame
-	return xid
+def extractor(position):
+  """
+  This function extracts the information from the SDSS database and returns
+  a pandas dataframe with the query region
 
-# testing it out
-radec='1h11m17.36s +14d26m53.6s'
-result=extractor(radec)
-print(result)
-
-#this function uses extracted information in order to dwonaload spectra
-def downloader(xid):
-    # start by splitting up instruments (SDSS vs eBOSS)
-    boss_dataframe = xid[xid['instrument'] == b'BOSS']
-    sdss_dataframe = xid[xid['instrument'] == b'SDSS']
+  extractor(str) --> pd.DataFrame
+  """
+  # query the region and get the data
+  pos = coords.SkyCoord(position, frame='icrs')
+  data = SDSS.query_region(pos, spectro=True)
+  return data.to_pandas()
 
 
-    # make sure to fix the instrument column in the eBOSS rows
-    boss_dataframe.remove_column("instrument")
-    boss_dataframe.add_column(name="instrument", col="eboss")
+def downloader(data):
+  """
+  This function uses extracted information in order to dwonaload spectra, 
+  separating the data from th SDSS and BOSS.
 
-    # change the tables to pandas dataframes
-    boss_dataframe=boss_dataframe.to_pandas()
-    sdss_dataframe=sdss_dataframe.to_pandas()
+  downloader(pd.Dataframe) --> [list(fits)]
+  """
+  #create a empty list
+  spec_list=[]
 
-    # combine the two data frames now that they have been edited
-    spec_frame=pd.concat([boss_dataframe, sdss_dataframe], ignore_index=False)
-
-    # now we want to get the spectra for each entry in the spec_frame
+  # iteration over the pandas
+  for i in range(len(data)):
+    results = SDSS.query_specobj(plate   = data['plate'][i],
+                                 mjd     = data['mjd'][i],
+                                 fiberID = data['fiberID'][i])
     
-    # create an empty list to hold all of the results files
-    spec_list=[]
+    # try if it can download the data (SDSS)
+    try:
+      spec    = SDSS.get_spectra(matches=results)
+      spec_list.append(spec)
 
-    # print(spec_frame)
+    # if it cant download, is because is from (BOSS)
+    except:
+      results.remove_column("instrument")
+      results.add_column(name="instrument", col="eboss") # replace the instrument column
+      spec    = SDSS.get_spectra(matches=results)
+      spec_list.append(spec)
 
-
-    # query the database
-    for i in range(len(spec_frame)):
-        plateID=spec_frame['plate'][i] # get the plate number
-        date=spec_frame['mjd'][i] # get the date (mjd)
-        fiber=spec_frame['fiberID'][i] # get the fiber ID
-        print(plateID)
-        print(date)
-        print(fiber)
-
-        results=SDSS.query_specobj(plate=plateID, mjd=date, fiberID=fiber) # querying for matching spectra
-        spec=SDSS.get_spectra(matches=results) # now actually download/get the spectra
-
-        # add each query result to the list holding the results files
-        spec_list.append(spec)
-
-    return spec_list
+  return spec_list
 
 
 
