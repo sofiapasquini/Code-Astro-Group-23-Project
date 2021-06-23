@@ -4,6 +4,9 @@ from astroquery.sdss import SDSS
 from astropy import coordinates as coords
 import pandas as pd 
 from astroquery.ned import Ned 
+import matplotlib.pyplot as plt
+from astropy.convolution import convolve, Box1DKernel
+
 
 # this function extracts the information from the database 
 def extractor(position): # the format of the positon must be as follows: '0h8m05.63s +14d50m23.3s'
@@ -95,7 +98,8 @@ def transform_data(spec_list, z): # takes as input a list of (I think?) fits fil
         # SOFIA- try a nested dictionary?!?! 
         for j in range(data.shape[0]):
 
-            dict[j]['flux']=data[j][0] # the fluxes
+            smoothedFlux=convolve(data[j][0],Box1DKernel(9)) # smooth the fluxes using a boxcar
+            dict[j]['flux']=smoothedFlux # the fluxes
 
             wavelengths_uncorrected=10**data[j][1] # the wavelengths (transformed from the log scale)
             wavelengths_corrected=redshift_correct(z, wavelengths_uncorrected) # save the wavelengths after they have been scaled to the rest-frame
