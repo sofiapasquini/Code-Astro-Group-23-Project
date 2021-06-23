@@ -3,6 +3,7 @@
 from astroquery.sdss import SDSS
 from astropy import coordinates as coords
 import pandas as pd 
+from astroquery.ned import Ned 
 
 # this function extracts the information from the database 
 def extractor(position): # the format of the positon must be as follows: '0h8m05.63s +14d50m23.3s'
@@ -14,7 +15,7 @@ def extractor(position): # the format of the positon must be as follows: '0h8m05
 # testing it out
 radec='1h11m17.36s +14d26m53.6s'
 result=extractor(radec)
-# print(result)
+print(result)
 
 #this function uses extracted information in order to dwonaload spectra
 def downloader(xid):
@@ -51,7 +52,7 @@ def downloader(xid):
         print(date)
         print(fiber)
 
-        sdss_results=SDSS.query_specobj(plate=plateID, mjd=date, fiberID=fiber) # querying for matching spectra
+        results=SDSS.query_specobj(plate=plateID, mjd=date, fiberID=fiber) # querying for matching spectra
         spec=SDSS.get_spectra(matches=results) # now actually download/get the spectra
 
         # add each query result to the list holding the results files
@@ -61,5 +62,50 @@ def downloader(xid):
 
 
 
-test=downloader(result)
-print(test)
+# test=downloader(result)
+# print(test)
+
+# define a function which grabs the object's redshift from the Ned database (better calibration)- needed for plotting in the object's rest-frame
+def redshift(position):
+    pos=coords.SkyCoord(position, frame='icrs') # create a position object
+    ned_results=Ned.query_region(pos,equinox="J2000", radius=2*u.arcsecond) # query the database
+    z=ned_results[0][6] # grab the redshift value from the query results
+    return z
+
+# define a function that transforms an objects wavelength array into the object's rest-frame
+def redshift_correct(z, wavelengths): # takes as input the redshift and the array of wavelengths
+    wavelengths_corrected = wavelengths/(z+1)
+    return wavelengths_corrected
+
+# define a function that transforms the results of downloader() into an array of data which will be plotted
+def transform_data(spec_list, z): # takes as input a list of (I think?) fits files results and the redshift of the object
+    
+    # iterate over each file and grab the important data
+    fluxes={} # containers for each of the data arrays to be plotted ( will be lists of lists/arrays)
+    wavelengths={}
+    inverse_variances={} # <- dictionaries!
+
+    dict={}
+
+    for spec in spec_list:
+
+        data=spec[0][1].data # this is the data part of the file
+
+        # store the appropriate columns in the designated containers- each row is a single spectrum?
+        # SOFIA- try a nested dictionary?!?! 
+        for j in range(data.shape[0]):
+
+            dict[j]['flux']=data[j][0] # the fluxes
+
+            wavelengths_uncorrected=10**data[j][1] # the wavelengths (transformed from the log scale)
+            wavelengths_corrected=redshift_correct(z, wavelengths_uncorrected) # save the wavelengths after they have been scaled to the rest-frame
+            dict[j]['wavelength']=wavelengths_corrected
+
+            inverse_variance=data[j][2] # the inverse variance of the flux
+            one_over_sigma=inverse_variance**0.5
+            sigma=1/one_over_sigma # the one-sigma  uncertainty associated with the flux array
+            dict[j]['1sigma']=sigma
+
+    # now return the nested dictionary, each key should have three arrays (flux, wavelength, and sigma)
+    return dict
+
