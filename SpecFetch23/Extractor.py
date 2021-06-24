@@ -6,6 +6,7 @@ import pandas as pd
 from astroquery.ned import Ned 
 import matplotlib.pyplot as plt
 from astropy.convolution import convolve, Box1DKernel
+import numpy as np
 
 
 def extractor(position):
