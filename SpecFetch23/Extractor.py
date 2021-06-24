@@ -131,21 +131,21 @@ def transform_data(spec_list, z): # takes as input a list of (I think?) fits fil
     # each key should have data.shape[0] number of arrays with all fluxes, wavelength and sigmas for every spec in spec_list
     return dict
 
-# now define a function which will plot the actual spectra given a spec dictionary
-def plot_spec(dict, radec, z): # takes as input the dictionary holding the data, the radec, and the redshift
-    # instantiate a figure object
-    fig=plt.figure()
-    plt.title(str(radec)+str('; ')+str("z"))
-    plt.xlabel("Rest-frame Wavelength [$\AA$]")
-    plt.ylabel("Flux [$10^{-17}$ erg$^{-1}$s$^{-1}$cm$^{-2}$$\AA^{-1}$]")
-    for epoch in range(len(dict)):
-        plt.plot(dict[epoch]['wavelength'], dict[epoch]['flux']) # plot the actual data
-        # now create upper and lower bounds on the uncertainty regions
-        sigmaUpper=np.add(dict[epoch]['flux'],dict[epoch]['1sigma'])
-        sigmaLower=np.subtract(dict[epoch]['flux'],dict[epoch]['1sigma'])
-        plt.fill_between(dict[epoch]['wavelength'],sigmaLower, sigmaUpper, color='grey', alpha='0.5')
+# # now define a function which will plot the actual spectra given a spec dictionary
+# def plot_spec(dict, radec, z): # takes as input the dictionary holding the data, the radec, and the redshift
+#     # instantiate a figure object
+#     fig=plt.figure()
+#     plt.title(str(radec)+str('; ')+str("z"))
+#     plt.xlabel("Rest-frame Wavelength [$\AA$]")
+#     plt.ylabel("Flux [$10^{-17}$ erg$^{-1}$s$^{-1}$cm$^{-2}$$\AA^{-1}$]")
+#     for epoch in range(len(dict)):
+#         plt.plot(dict[epoch]['wavelength'], dict[epoch]['flux']) # plot the actual data
+#         # now create upper and lower bounds on the uncertainty regions
+#         sigmaUpper=np.add(dict[epoch]['flux'],dict[epoch]['1sigma'])
+#         sigmaLower=np.subtract(dict[epoch]['flux'],dict[epoch]['1sigma'])
+#         plt.fill_between(dict[epoch]['wavelength'],sigmaLower, sigmaUpper, color='grey', alpha='0.5')
 
-    plt.show()
+#     plt.show()
 
 
 ##TEST  
