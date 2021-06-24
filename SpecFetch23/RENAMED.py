@@ -22,3 +22,12 @@ def plot_spec(dict, radec, z): # takes as input the dictionary holding the data,
         plt.fill_between(wavelength, sigmaLower, sigmaUpper, color='grey', alpha=0.5)
 
         plt.show()
+
+radec='22h38m12.39s +21d32m03.4s'
+z=Extractor.redshift(radec)
+data=Extractor.extractor(radec)
+spec_list=Extractor.downloader(data)
+dic = Extractor.transform_data(spec_list,z)
+# print(dic)
+
+plot_spec(dic, radec, z)
