@@ -156,6 +156,6 @@ spec_list= downloader(data)
 dic = transform_data(spec_list,z)
 #print(dic)
 
-print(transform_data(spec_list,z)['flux'][0])
+#print(transform_data(spec_list,z)['flux'][0])
 #print(transform_data(spec_list,z)['wavelength'])
 #print(transform_data(spec_list,z)['1sigma'])       ###some inf's - divided by zero
