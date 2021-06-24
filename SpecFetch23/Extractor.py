@@ -39,6 +39,7 @@ def extractor(position):
 #   position=ra_dec_format(position)
 
   # query the region and get the data
+  position = ra_dec_format(position)
   pos = coords.SkyCoord(position, frame='icrs')
   data = SDSS.query_region(pos, spectro=True)
   return data.to_pandas()
@@ -84,7 +85,7 @@ def redshift(position):
 
     # make sure to format the input position argument such that it is recognizable by astroquery.Ned
     # position=ra_dec_format(position)
-
+    position = ra_dec_format(position)
     pos=coords.SkyCoord(position, frame='icrs') # create a position object
     ned_results=Ned.query_region(pos,equinox="J2000", radius=2*u.arcsecond) # query the database
     z=ned_results[0][6] # grab the redshift value from the query results
@@ -179,8 +180,9 @@ def plot_spec(dict, radec, z): # takes as input the dictionary holding the data,
         plt.show()
 
 
+
 #TEST
-radec='22h38m12.39s +21d32m03.4s'
+radec='223812.39 +213203.4'
 z=redshift(radec)
 data=extractor(radec)
 spec_list=downloader(data)
