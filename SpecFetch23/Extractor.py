@@ -7,6 +7,7 @@ from astroquery.ned import Ned
 import matplotlib.pyplot as plt
 from astropy.convolution import convolve, Box1DKernel
 import numpy as np
+from astropy import units as u
 
 
 def extractor(position):
@@ -70,7 +71,6 @@ def redshift_correct(z, wavelengths): # takes as input the redshift and the arra
     return wavelengths_corrected
 
 # define a function that transforms the results of downloader() into an array of data which will be plotted
-# define a function that transforms the results of downloader() into an array of data which will be plotted
 def transform_data(spec_list, z): # takes as input a list of (I think?) fits files results and the redshift of the object
     
     # iterate over each file and grab the important data
@@ -81,6 +81,10 @@ def transform_data(spec_list, z): # takes as input a list of (I think?) fits fil
     dict={}
 
     for spec in spec_list:
+        
+        flux_array=[]
+        wavelength_array=[]
+        sigma_array=[]
 
         data=spec[1].data # this is the data part of the file
         #print(data.shape[0])
@@ -93,35 +97,38 @@ def transform_data(spec_list, z): # takes as input a list of (I think?) fits fil
 
             #smoothedFlux=convolve(data[0],Box1DKernel(9)) # smooth the fluxes using a boxcar
             #print(smoothedFlux)
-            flux = data[j][0]
-            if 'flux' in dict:
-                dict['flux'].append(flux)
-            else:
-                dict['flux'] = [flux]
-
+            flux_data = data[j][0]
+            flux_array.append(flux_data)
+            
             wavelengths_uncorrected=10**data[j][1] # the wavelengths (transformed from the log scale)
             #print(wavelengths_uncorrected)
             wavelengths_corrected=redshift_correct(z, wavelengths_uncorrected) # save the wavelengths after they have been scaled to the rest-frame
             #print(wavelengths_corrected)
-            if 'wavelength' in dict:
-                dict['wavelength'].append(wavelengths_corrected)
-            else:
-                dict['wavelength'] = [wavelengths_corrected]
+            wavelength_array.append(wavelengths_corrected)
 
             inverse_variance=data[j][2] # the inverse variance of the flux
             one_over_sigma=inverse_variance**0.5
             sigma=1/one_over_sigma # the one-sigma  uncertainty associated with the flux array
-            
-            if '1sigma' in dict:
-                dict['1sigma'].append(sigma)
-            else:
-                dict['1sigma'] = [sigma]
+            sigma_array.append(sigma)
         
-    flux = dict['flux']
-    smoothedFlux = convolve(flux, Box1DKernel(9))
-    dict['flux'] = smoothedFlux
+    smoothedFlux = convolve(flux_array,Box1DKernel(9))
+    if 'flux' in dict:
+        dict['flux'].append([smoothedFlux])
+    else:
+        dict['flux'] = [smoothedFlux]
+        
+    if 'wavelength' in dict:
+        dict['wavelength'].append([wavelength_array])
+    else:
+        dict['wavelength'] = [wavelength_array]
+        
+    if '1sigma' in dict:
+        dict['1sigma'].append([sigma_array])
+    else:
+        dict['1sigma'] = [sigma_array]
 
-    # now return the nested dictionary, each key should have three arrays (flux, wavelength, and sigma)
+    # now return the nested dictionary with three keys:(flux, wavelength and sigma)
+    # each key should have data.shape[0] number of arrays with all fluxes, wavelength and sigmas for every spec in spec_list
     return dict
 
 # now define a function which will plot the actual spectra given a spec dictionary
@@ -141,11 +148,14 @@ def plot_spec(dict, radec, z): # takes as input the dictionary holding the data,
     plt.show()
 
 
-##TEST    
+##TEST  
+z=0  
 radec='00h53m13.81s +13d09m55.0s'
 data=extractor(radec)
 spec_list= downloader(data)
-z=0
-print(transform_data(spec_list,z)['flux'])
-print(transform_data(spec_list,z)['wavelength'])
-print(transform_data(spec_list,z)['1sigma'])       ###some inf's - divided by zero
+dic = transform_data(spec_list,z)
+#print(dic)
+
+print(transform_data(spec_list,z)['flux'][0])
+#print(transform_data(spec_list,z)['wavelength'])
+#print(transform_data(spec_list,z)['1sigma'])       ###some inf's - divided by zero
