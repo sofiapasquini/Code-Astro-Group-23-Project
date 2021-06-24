@@ -10,13 +10,36 @@ import numpy as np
 from astropy import units as u
 
 
+def ra_dec_format(val):
+    """ This function converts the input string format of a right ascension/ declination coordinate
+    to one recognizable by the astroquery.SDSS module.
+    """
+    #ra
+    hour = val[0:2]
+    min_ = val[2:4]
+    sec = val[4:9]
+    ra = hour+'h'+min_+'m'+sec+'s'
+    #dec
+    deg = val[9:13]
+    min_d = val[13:15]
+    sec_d = val[15:]
+    dec = deg+'d'+min_d+'m'+sec_d+'s'
+    return ra+dec
+
+
+
 def extractor(position):
   """
   This function extracts the information from the SDSS database and returns
-  a pandas dataframe with the query region
+  a pandas dataframe with the query region. Please ensure that the 'position'
+  input is formatted as '005313.81 +130955.0
 
   extractor(str) --> pd.DataFrame
   """
+
+  # convert the input position argument to the format recognized by astroquery.SDSS
+  position=ra_dec_format(position)
+
   # query the region and get the data
   pos = coords.SkyCoord(position, frame='icrs')
   data = SDSS.query_region(pos, spectro=True)
@@ -60,6 +83,10 @@ def downloader(data):
 
 # define a function which grabs the object's redshift from the Ned database (better calibration)- needed for plotting in the object's rest-frame
 def redshift(position):
+
+    # make sure to format the input position argument such that it is recognizable by astroquery.Ned
+    position=ra_dec_format(position)
+
     pos=coords.SkyCoord(position, frame='icrs') # create a position object
     ned_results=Ned.query_region(pos,equinox="J2000", radius=2*u.arcsecond) # query the database
     z=ned_results[0][6] # grab the redshift value from the query results
@@ -131,22 +158,6 @@ def transform_data(spec_list, z): # takes as input a list of (I think?) fits fil
     # each key should have data.shape[0] number of arrays with all fluxes, wavelength and sigmas for every spec in spec_list
     return dict
 
-# # now define a function which will plot the actual spectra given a spec dictionary
-# def plot_spec(dict, radec, z): # takes as input the dictionary holding the data, the radec, and the redshift
-#     # instantiate a figure object
-#     fig=plt.figure()
-#     plt.title(str(radec)+str('; ')+str("z"))
-#     plt.xlabel("Rest-frame Wavelength [$\AA$]")
-#     plt.ylabel("Flux [$10^{-17}$ erg$^{-1}$s$^{-1}$cm$^{-2}$$\AA^{-1}$]")
-#     for epoch in range(len(dict)):
-#         plt.plot(dict[epoch]['wavelength'], dict[epoch]['flux']) # plot the actual data
-#         # now create upper and lower bounds on the uncertainty regions
-#         sigmaUpper=np.add(dict[epoch]['flux'],dict[epoch]['1sigma'])
-#         sigmaLower=np.subtract(dict[epoch]['flux'],dict[epoch]['1sigma'])
-#         plt.fill_between(dict[epoch]['wavelength'],sigmaLower, sigmaUpper, color='grey', alpha='0.5')
-
-#     plt.show()
-
 
 ##TEST  
 z=0  
@@ -154,7 +165,7 @@ radec='00h53m13.81s +13d09m55.0s'
 data=extractor(radec)
 spec_list= downloader(data)
 dic = transform_data(spec_list,z)
-#print(dic)
+print(dic)
 
 #print(transform_data(spec_list,z)['flux'][0])
 #print(transform_data(spec_list,z)['wavelength'])
