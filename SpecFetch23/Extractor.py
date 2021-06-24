@@ -26,8 +26,6 @@ def ra_dec_format(val):
     dec = deg+'d'+min_d+'m'+sec_d+'s'
     return ra+" "+dec
 
-
-
 def extractor(position):
   """
   This function extracts the information from the SDSS database and returns
@@ -180,6 +178,11 @@ def plot_spec(dict, radec, z): # takes as input the dictionary holding the data,
 
         plt.show()
 
-#print(transform_data(spec_list,z)['flux'][0])
-#print(transform_data(spec_list,z)['wavelength'])
-#print(transform_data(spec_list,z)['1sigma'])       ###some inf's - divided by zero
+
+#TEST
+radec='22h38m12.39s +21d32m03.4s'
+z=redshift(radec)
+data=extractor(radec)
+spec_list=downloader(data)
+dic = transform_data(spec_list,z)
+plot_spec(dic, radec, z)
