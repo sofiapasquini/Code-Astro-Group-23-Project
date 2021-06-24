@@ -2,19 +2,6 @@ import Extractor
 import matplotlib.pyplot as plt
 import numpy as np
 
-##TEST  
-z=0  
-radec='00h53m13.81s +13d09m55.0s'
-#data=extractor(radec)
-#spec_list= downloader(data)
-#dic = transform_data(spec_list,z)
-
-data = Extractor.extractor(radec)
-spec_list = Extractor.downloader(data)
-dic = Extractor.transform_data(spec_list,z)
-
-#print(dic)
-
 def plot_spec(dict, radec, z): # takes as input the dictionary holding the data, the radec, and the redshift
 
     for i in range(len(dict['wavelength'])):
@@ -35,5 +22,3 @@ def plot_spec(dict, radec, z): # takes as input the dictionary holding the data,
         plt.fill_between(wavelength, sigmaLower, sigmaUpper, color='grey', alpha=0.5)
 
         plt.show()
-
-plot_spec(dic, radec, z)
