@@ -39,17 +39,17 @@ def downloader(data):
     
     # try if it can download the data (SDSS)
     try:
-      spec    = SDSS.get_spectra(matches=results)
+      spec    = SDSS.get_spectra(matches=results)[0]
       spec_list.append(spec)
 
     # if it cant download, is because is from (BOSS)
     except:
       results.remove_column("instrument")
       results.add_column(name="instrument", col="eboss") # replace the instrument column
-      spec    = SDSS.get_spectra(matches=results)
+      spec    = SDSS.get_spectra(matches=results)[0]
       spec_list.append(spec)
 
-  return spec_list
+  return spec_list 
 
 
 
@@ -69,34 +69,56 @@ def redshift_correct(z, wavelengths): # takes as input the redshift and the arra
     return wavelengths_corrected
 
 # define a function that transforms the results of downloader() into an array of data which will be plotted
+# define a function that transforms the results of downloader() into an array of data which will be plotted
 def transform_data(spec_list, z): # takes as input a list of (I think?) fits files results and the redshift of the object
     
     # iterate over each file and grab the important data
-    fluxes={} # containers for each of the data arrays to be plotted ( will be lists of lists/arrays)
-    wavelengths={}
-    inverse_variances={} # <- dictionaries!
+    #fluxes={} # containers for each of the data arrays to be plotted ( will be lists of lists/arrays)
+    #wavelengths={}
+    #inverse_variances={} # <- dictionaries!
 
     dict={}
 
     for spec in spec_list:
 
-        data=spec[0][1].data # this is the data part of the file
+        data=spec[1].data # this is the data part of the file
+        #print(data.shape[0])
+        #print(data)
 
         # store the appropriate columns in the designated containers- each row is a single spectrum?
         # SOFIA- try a nested dictionary?!?! 
         for j in range(data.shape[0]):
+            #print(data[j][0])
 
-            smoothedFlux=convolve(data[j][0],Box1DKernel(9)) # smooth the fluxes using a boxcar
-            dict[j]['flux']=smoothedFlux # the fluxes
+            #smoothedFlux=convolve(data[0],Box1DKernel(9)) # smooth the fluxes using a boxcar
+            #print(smoothedFlux)
+            flux = data[j][0]
+            if 'flux' in dict:
+                dict['flux'].append(flux)
+            else:
+                dict['flux'] = [flux]
 
             wavelengths_uncorrected=10**data[j][1] # the wavelengths (transformed from the log scale)
+            #print(wavelengths_uncorrected)
             wavelengths_corrected=redshift_correct(z, wavelengths_uncorrected) # save the wavelengths after they have been scaled to the rest-frame
-            dict[j]['wavelength']=wavelengths_corrected
+            #print(wavelengths_corrected)
+            if 'wavelength' in dict:
+                dict['wavelength'].append(wavelengths_corrected)
+            else:
+                dict['wavelength'] = [wavelengths_corrected]
 
             inverse_variance=data[j][2] # the inverse variance of the flux
             one_over_sigma=inverse_variance**0.5
             sigma=1/one_over_sigma # the one-sigma  uncertainty associated with the flux array
-            dict[j]['1sigma']=sigma
+            
+            if '1sigma' in dict:
+                dict['1sigma'].append(sigma)
+            else:
+                dict['1sigma'] = [sigma]
+        
+    flux = dict['flux']
+    smoothedFlux = convolve(flux, Box1DKernel(9))
+    dict['flux'] = smoothedFlux
 
     # now return the nested dictionary, each key should have three arrays (flux, wavelength, and sigma)
     return dict
@@ -116,3 +138,13 @@ def plot_spec(dict, radec, z): # takes as input the dictionary holding the data,
         plt.fill_between(dict[epoch]['wavelength'],sigmaLower, sigmaUpper, color='grey', alpha='0.5')
 
     plt.show()
+
+
+##TEST    
+radec='00h53m13.81s +13d09m55.0s'
+data=extractor(radec)
+spec_list= downloader(data)
+z=0
+print(transform_data(spec_list,z)['flux'])
+print(transform_data(spec_list,z)['wavelength'])
+print(transform_data(spec_list,z)['1sigma'])       ###some inf's - divided by zero
