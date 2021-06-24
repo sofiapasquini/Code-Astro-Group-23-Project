@@ -24,7 +24,7 @@ def ra_dec_format(val):
     min_d = val[13:15]
     sec_d = val[15:]
     dec = deg+'d'+min_d+'m'+sec_d+'s'
-    return ra+dec
+    return ra+" "+dec
 
 
 
@@ -38,7 +38,7 @@ def extractor(position):
   """
 
   # convert the input position argument to the format recognized by astroquery.SDSS
-  position=ra_dec_format(position)
+#   position=ra_dec_format(position)
 
   # query the region and get the data
   pos = coords.SkyCoord(position, frame='icrs')
@@ -85,7 +85,7 @@ def downloader(data):
 def redshift(position):
 
     # make sure to format the input position argument such that it is recognizable by astroquery.Ned
-    position=ra_dec_format(position)
+    # position=ra_dec_format(position)
 
     pos=coords.SkyCoord(position, frame='icrs') # create a position object
     ned_results=Ned.query_region(pos,equinox="J2000", radius=2*u.arcsecond) # query the database
@@ -159,13 +159,26 @@ def transform_data(spec_list, z): # takes as input a list of (I think?) fits fil
     return dict
 
 
-##TEST  
-z=0  
-radec='00h53m13.81s +13d09m55.0s'
-data=extractor(radec)
-spec_list= downloader(data)
-dic = transform_data(spec_list,z)
-print(dic)
+def plot_spec(dict, radec, z): # takes as input the dictionary holding the data, the radec, and the redshift
+
+    for i in range(len(dict['wavelength'])):
+        #extract data
+        wavelength = dict['wavelength'][i]
+        sigma = dict['1sigma'][i]
+        flux = dict['flux'][i]
+
+        # instantiate a figure object
+        fig=plt.figure()
+        plt.title(str(radec)+str('; ')+'z={}'.format(z))
+        plt.xlabel("Rest-frame Wavelength [$\AA$]")
+        plt.ylabel("Flux [$10^{-17}$ erg$^{-1}$s$^{-1}$cm$^{-2}$$\AA^{-1}$]")
+        plt.plot(wavelength, flux) # plot the actual data
+        # now create upper and lower bounds on the uncertainty regions
+        sigmaUpper=np.add(flux,sigma)
+        sigmaLower=np.subtract(flux,sigma)
+        plt.fill_between(wavelength, sigmaLower, sigmaUpper, color='grey', alpha=0.5)
+
+        plt.show()
 
 #print(transform_data(spec_list,z)['flux'][0])
 #print(transform_data(spec_list,z)['wavelength'])
