@@ -48,7 +48,6 @@ def extractor(position):
     pandas DataFrame: the results returned by astroquery.SDSS.query_region().
   """
 
-
   # convert the input position argument to the format recognized by astroquery.SDSS
 #   position=ra_dec_format(position)
 
@@ -101,7 +100,18 @@ def downloader(data):
 # print(test)
 
 def redshift(position):
+  """ Query Ned for object's redshift
 
+  Query the Ned database using astroquery.Ned by a right ascension/ declination coordinate for the corresponding redshift value.
+
+  Args:
+    position (str): string; an ra/dec expression formatted as "005313.81 +130955.0".
+
+  Returns:
+    float: the redshift of the object located at the input ra/dec.
+
+
+  """
 
     # make sure to format the input position argument such that it is recognizable by astroquery.Ned
     # position=ra_dec_format(position)
@@ -113,6 +123,20 @@ def redshift(position):
 
 
 def redshift_correct(z, wavelengths): 
+    """ Redshift correction
+
+    Correct a given numpy array of wavelengths for redshift effects using an accepted redshift value.
+
+    Args:
+      z (float): a redshift value
+
+      wavelengths (array): a numpy array containing wavelenth values
+
+    Returns:
+      array: a numpy array of wavelength values of the same size as input wavelengths array which has been 
+      corrected to the emitted wavelength values for the rest-frame of the object in quetion.
+    """
+
 
 
     wavelengths_corrected = wavelengths/(z+1)
@@ -127,9 +151,10 @@ def transform_data(spec_list, z):
     in a nested dictionary (each of the three data arrays per epoch availible).
 
     Args:
-      spec_list (list): a list of fits files holding the data sections of the resuls files from the SDSS database; output from downloader().
+      spec_list (list): a list of fits files holding the data sections of the resuls files from the SDSS database; output from
+      downloader().
 
-      z (float): a redshift value.
+      z (float): a redshift value
 
     Returns:
       dictionary : a (nested) dictonary containing flux, wavelength, and one-sigma arrays for each availible epoch. 
@@ -138,7 +163,6 @@ def transform_data(spec_list, z):
 
 
     """
-
     # iterate over each file and grab the important data
     #fluxes={} # containers for each of the data arrays to be plotted ( will be lists of lists/arrays)
     #wavelengths={}
@@ -199,8 +223,27 @@ def transform_data(spec_list, z):
 
 
 def plot_spec(dict, radec, z): 
+  """Plot availible spectra from the SDSS database
 
+  Plots the spectra availible for a given object in the SDSS database queried by right ascension/ declination coordinate.
+  Fluxes [10^-17 ergs/s/cm^2/Angstrom] are plotted with corresponding one-sigma uncertainty regsions as functions of Wavelength
+  [Angstroms] in the object rest-frame.
 
+  Args:
+    dict (dictionary): a (nested) dictonary containing flux, wavelength, and one-sigma arrays for each availible epoch. 
+      The numerical keys representing number of availible epochs (1,2,3 ... etc), internal dictionaries
+      for each contain numpy arrays for flux, wavelength, and one-sigma values. The output of transform_data().
+
+    radec (int/str): an ra/dec (of the object queried), used for the plot title
+
+    z (int): the redshift (of the object queried), used for the plot title
+
+  Returns:
+
+    fig: A plot of the object's flux as a function of rest-frame wavelength. Associated one-sigma
+    uncertainty regions are highlighted in grey above/below each spectrum, all availible epochs (from the SDSS database) are
+    represented.
+  """
 
 
 

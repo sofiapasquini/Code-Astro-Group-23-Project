@@ -35,19 +35,13 @@ def ra_dec_format(val):
     return ra+" "+dec
 
 def extractor(position):
-  """Spectral data extraction from SDSS.
-
-  Extract the information from the SDSS database (query by a region surrounding the input ra/dec) and return
-  a pandas dataframe holding the query results. Please ensure that the 'position'
+  """
+  This function extracts the information from the SDSS database and returns
+  a pandas dataframe with the query region. Please ensure that the 'position'
   input is formatted as '005313.81 +130955.0
 
-  Args:
-    position (str) : string; an ra/dec expression formatted as "005313.81 +130955.0".
-
-  Returns:
-    pandas DataFrame: the results returned by astroquery.SDSS.query_region().
+  extractor(str) --> pd.DataFrame
   """
-
 
   # convert the input position argument to the format recognized by astroquery.SDSS
 #   position=ra_dec_format(position)
@@ -60,17 +54,11 @@ def extractor(position):
 
 
 def downloader(data):
-  """ Download database query results
+  """
+  This function uses extracted information in order to dwonaload spectra, 
+  separating the data from th SDSS and BOSS.
 
-  Uses extracted information from extractor() in order to download spectra availible for 
-  the queried ra/dec.
-
-  Args:
-    data (pd.DataFrame): the output results from extractor(); a dataframe holding the results returned
-    by astroquery.SDSS.query_region(). Returns the data portions of the original output fits files in a list format.
-
-  Returns:
-    list: a list of fits files holding the data sections of the resuls files from the SDSS database.
+  downloader(pd.Dataframe) --> [list(fits)]
   """
   #create a empty list
   spec_list=[]
@@ -100,45 +88,25 @@ def downloader(data):
 # test=downloader(result)
 # print(test)
 
+# define a function which grabs the object's redshift from the Ned database (better calibration)- needed for plotting in the object's rest-frame
 def redshift(position):
-
 
     # make sure to format the input position argument such that it is recognizable by astroquery.Ned
     # position=ra_dec_format(position)
     position = ra_dec_format(position)
     pos=coords.SkyCoord(position, frame='icrs') # create a position object
     ned_results=Ned.query_region(pos,equinox="J2000", radius=2*u.arcsecond) # query the database
-    z=float(ned_results[0][6]) # grab the redshift value from the query results
+    z=ned_results[0][6] # grab the redshift value from the query results
     return z
 
-
-def redshift_correct(z, wavelengths): 
-
-
+# define a function that transforms an objects wavelength array into the object's rest-frame
+def redshift_correct(z, wavelengths): # takes as input the redshift and the array of wavelengths
     wavelengths_corrected = wavelengths/(z+1)
     return wavelengths_corrected
 
-
-def transform_data(spec_list, z): 
-    """Organize output of downloader()
-
-    Sort the information from the output list of spectra from downloader() (results of a 
-    query by astroquery.SDSS.query_region) into numpy arrays containing flux, wavelength, and one-sigma (one-sigma uncertainty associated with each flux value) values
-    in a nested dictionary (each of the three data arrays per epoch availible).
-
-    Args:
-      spec_list (list): a list of fits files holding the data sections of the resuls files from the SDSS database; output from downloader().
-
-      z (float): a redshift value.
-
-    Returns:
-      dictionary : a (nested) dictonary containing flux, wavelength, and one-sigma arrays for each availible epoch. 
-      The numerical keys representing number of availible epochs (1,2,3 ... etc), internal dictionaries
-      for each contain numpy arrays for flux, wavelength, and one-sigma values.
-
-
-    """
-
+# define a function that transforms the results of downloader() into an array of data which will be plotted
+def transform_data(spec_list, z): # takes as input a list of (I think?) fits files results and the redshift of the object
+    
     # iterate over each file and grab the important data
     #fluxes={} # containers for each of the data arrays to be plotted ( will be lists of lists/arrays)
     #wavelengths={}
@@ -198,11 +166,7 @@ def transform_data(spec_list, z):
     return dict
 
 
-def plot_spec(dict, radec, z): 
-
-
-
-
+def plot_spec(dict, radec, z): # takes as input the dictionary holding the data, the radec, and the redshift
 
     for i in range(len(dict['wavelength'])):
         #extract data
@@ -225,10 +189,10 @@ def plot_spec(dict, radec, z):
 
 
 
-# #TEST
-# radec='223812.39 +213203.4'
-# z=redshift(radec)
-# data=extractor(radec)
-# spec_list=downloader(data)
-# dic = transform_data(spec_list,z)
-# plot_spec(dic, radec, z)
+#TEST
+radec='223812.39 +213203.4'
+z=redshift(radec)
+data=extractor(radec)
+spec_list=downloader(data)
+dic = transform_data(spec_list,z)
+plot_spec(dic, radec, z)
